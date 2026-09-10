@@ -140,32 +140,70 @@ function renderFinalAssemblies(){
  assemblyIndex=previous;configureAssemblyView();renderAssemblyDrawing();
 }
 function initAssembly(){
+ const svg=$('assembly-svg');
+ const fingers=new Map();
+ let multiTouch=false,pendingTap=null,blockedClickUntil=0;
+ function releaseDrag(restore=false){
+  if(!assemblyDrag)return;
+  const drag=assemblyDrag;assemblyDrag=null;
+  if(restore)adjustBoard(drag.start);
+  if(svg.hasPointerCapture(drag.id))svg.releasePointerCapture(drag.id);
+ }
+ // 2本目が図の外に入った場合も検知する。全指が離れるまでゲーム操作を再開しない。
+ document.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='touch')return;
+  fingers.set(e.pointerId,{x:e.clientX,y:e.clientY,target:e.target,moved:false});
+  if(fingers.size>1){multiTouch=true;blockedClickUntil=performance.now()+700;pendingTap=null;releaseDrag(true);}
+ },true);
+ document.addEventListener('pointermove',e=>{
+  const f=fingers.get(e.pointerId);
+  if(f&&Math.hypot(e.clientX-f.x,e.clientY-f.y)>10)f.moved=true;
+ },true);
+ document.addEventListener('pointerup',e=>{fingers.delete(e.pointerId);});
+ document.addEventListener('pointercancel',e=>{fingers.delete(e.pointerId);pendingTap=null;releaseDrag();});
+ // pointercancel後もブラウザのジェスチャーは続くため、実際の指が離れた時点で解除。
+ const finishTouches=e=>{if(e.touches.length===0){if(multiTouch)blockedClickUntil=performance.now()+700;multiTouch=false;fingers.clear();pendingTap=null;}};
+ document.addEventListener('touchend',finishTouches,{passive:true});
+ document.addEventListener('touchcancel',finishTouches,{passive:true});
  $('assembly-form').addEventListener('submit',submitAssembly);
  // タッチドラッグ直後の互換クリック待ちに依存しない。後続クリックは二重実行しない。
  let lastTouchActivation=-Infinity;
  $('assembly-form').addEventListener('pointerup',e=>{
   const button=e.target.closest('button');
-  if(e.pointerType!=='touch'||!button)return;
+  const finger=fingers.get(e.pointerId);
+  if(e.pointerType!=='touch'||!button||multiTouch||!finger||finger.moved||!button.contains(finger.target))return;
   e.preventDefault();lastTouchActivation=performance.now();
   if(button.type==='submit')submitAssembly(e);
   else if(button.dataset.action)handleAssemblyAction(button.dataset.action);
  });
  $('assembly-form').addEventListener('click',e=>{
-  if(e.detail>0&&performance.now()-lastTouchActivation<600){e.preventDefault();e.stopImmediatePropagation();}
+  if(e.detail>0&&(multiTouch||performance.now()<blockedClickUntil||performance.now()-lastTouchActivation<600)){e.preventDefault();e.stopImmediatePropagation();}
  },true);
  $('assembly-controls').addEventListener('click',e=>{const button=e.target.closest('[data-action]');if(button)handleAssemblyAction(button.dataset.action);});
  $('restart-side').addEventListener('click',()=>{assemblyStates[assemblyIndex]=newAssemblyState();delete activeSide().boardEL;complete=false;renderAssembly();renderStep();renderConditions();renderFinalAssemblies();});
- const svg=$('assembly-svg');
  function coordinates(e){const point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;const p=point.matrixTransform(svg.getScreenCTM().inverse());return {x:assemblyView.minX+(p.x-65)/assemblyView.scale,el:assemblyView.minEL+(360-p.y)/assemblyView.scale};}
+ function placeAt(e,stage){
+  const p=coordinates(e);
+  if(stage===3){if(Math.abs(p.el-groundElevation(problem,p.x))*assemblyView.scale>30)return assemblyMessage('地盤線の近くをクリック・タップしてください。');tryPlacePost(p.x);}
+  else {placePoint(p.x);assemblyMessage('法板取付点を設置しました。必要なら左右ボタンで微調整してください。');}
+ }
  svg.addEventListener('pointerdown',e=>{
-  if(!assemblyActive)return;const a=activeAssembly(),p=coordinates(e);
-  if(a.stage===3&&a.armed){if(Math.abs(p.el-groundElevation(problem,p.x))*assemblyView.scale>30)return assemblyMessage('地盤線の近くをクリック・タップしてください。');tryPlacePost(p.x);}
-  else if(a.stage===5&&e.target.closest('[data-board]')){e.preventDefault();assemblyDrag={id:e.pointerId,el:p.el,start:a.boardEL};svg.setPointerCapture(e.pointerId);}
-  else if(a.stage===8&&e.target.closest('[data-board]')){e.preventDefault();placePoint(p.x);assemblyMessage('法板取付点を設置しました。必要なら左右ボタンで微調整してください。');}
+  if(!assemblyActive||multiTouch)return;const a=activeAssembly(),p=coordinates(e);
+  if((a.stage===3&&a.armed)||(a.stage===8&&e.target.closest('[data-board]'))){
+   if(e.pointerType==='touch')pendingTap={id:e.pointerId,stage:a.stage};
+   else if(e.button===0)placeAt(e,a.stage);
+  }
+  else if(a.stage===5&&e.target.closest('[data-board]')&&(e.pointerType==='touch'||e.button===0)){
+   assemblyDrag={id:e.pointerId,el:p.el,start:a.boardEL};svg.setPointerCapture(e.pointerId);
+  }
  });
- svg.addEventListener('pointermove',e=>{if(assemblyDrag&&assemblyDrag.id===e.pointerId){e.preventDefault();const p=coordinates(e);adjustBoard(assemblyDrag.start+p.el-assemblyDrag.el);}});
- const end=e=>{if(assemblyDrag?.id===e.pointerId){assemblyDrag=null;if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);}};
- svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+ svg.addEventListener('pointermove',e=>{if(!multiTouch&&assemblyDrag?.id===e.pointerId){const p=coordinates(e);adjustBoard(assemblyDrag.start+p.el-assemblyDrag.el);}});
+ svg.addEventListener('pointerup',e=>{
+  const tap=pendingTap,finger=fingers.get(e.pointerId);pendingTap=null;
+  if(tap?.id===e.pointerId&&!multiTouch&&finger&&!finger.moved&&activeAssembly().stage===tap.stage)placeAt(e,tap.stage);
+  if(assemblyDrag?.id===e.pointerId)releaseDrag();
+ });
+ svg.addEventListener('pointercancel',()=>{pendingTap=null;releaseDrag();});
 }
 
 
