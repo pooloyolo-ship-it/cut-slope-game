@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>切土丁張設置ゲーム | Ver.1 改訂版</title><link rel="stylesheet" href="style.css"><script src="model.js" defer></script><script src="assembly.js" defer></script><script src="script.js" defer></script></head>
+<body>
+<header><div class="brand"><span class="brand-icon" aria-hidden="true">∠</span>土木の実習室 <span class="version">VER.1 改訂版</span></div><span class="header-note">施工管理の基礎を、図で学ぶ。</span></header>
+<main><div class="intro"><div><p class="eyebrow">FIELD PRACTICE / 01</p><h1>切土丁張設置ゲーム</h1><p>幅杭を利用して、切土法面の丁張を正しく設置しよう。</p></div><span class="level">初級・中級・上級 · 全9問</span></div>
+<section id="selection"><h2>問題を選ぶ</h2><p class="section-hint">各レベル3問。クリアした問題は ✓ で表示します。</p><div id="selection-list"></div></section><p id="save-status" role="status"></p><div id="game" hidden><div class="panel-heading"><b id="question-position"></b><button type="button" id="reset-game">この問題をリセット</button><button type="button" id="back-selection">問題選択へ</button></div><p id="level-clear" class="completion-banner" hidden></p><div id="progress" class="steps" aria-label="学習の進行状況"></div>
+<div class="workspace"><section class="panel diagram-panel"><div class="panel-heading"><h2>横断図</h2><span class="live-badge">図を読んで考える</span></div><p class="section-hint">幅杭・水平板・法板の位置関係を確認しましょう。</p><svg id="cross-section" viewBox="0 0 760 510" role="img" aria-label="センター杭、掘削計画面、法尻、計画法面と幅杭"></svg><div class="legend"><span><i class="ground-key"></i>現況地盤</span><span><i class="excavation-key"></i>掘削計画面</span><span><i class="design-key"></i>法板（計画法面）</span><span><i class="board-key"></i>水平板</span><span>⊥ センター杭・幅杭</span></div><div class="reading-tip"><b>横断図の読み方</b><p>掘削計画面の外端が法尻です。そこから外側へ計画法面が上がります。法勾配の「1」は鉛直、「n」は水平の比を表します。</p><p id="ground-description"></p><p id="drawing-status"></p></div><div id="completion" hidden></div></section>
+<aside><section class="panel"><div class="panel-heading"><h2>問題条件</h2><span class="problem-number">条件を確認</span></div><h3 id="problem-title"></h3><p class="section-hint">問題条件を確認し、幅杭と計画法面の関係を考えましょう。</p><dl id="conditions"></dl></section>
+<section id="calculation-panel" class="panel"><div class="panel-heading"><h2 id="step-number"></h2><span class="small-muted">獲得 <b id="score-value">0</b> / 100点</span></div><h3 id="step-title"></h3><form id="placement-form" novalidate><div id="step-fields" class="input-grid"></div><p id="tolerance" class="fine-print"></p><p id="error" role="alert"></p><div class="actions"><button type="submit" id="judge" class="primary">判定する →</button><button type="button" id="next" class="primary" hidden>次のSTEPへ →</button><button type="button" id="reset">リセット</button></div></form><p id="step-message" class="step-message" role="status"></p><p class="fine-print">正解すると次へ進めます。再回答による減点はありません。後半は画面上で丁張を組み立てます。</p></section></aside></div>
+<section id="assembly-panel" class="panel result-panel" hidden>
+ <div class="panel-heading"><h2 id="assembly-title">丁張組立ゲーム</h2><span id="assembly-score"></span></div>
+ <p id="assembly-instructions"></p>
+ <div class="assembly-layout"><div><p id="assembly-live" class="assembly-live" role="status"></p><svg id="assembly-svg" viewBox="0 0 800 440" role="img" aria-label="クリック・タップで丁張を設置する組立画面"></svg><p id="point-live" class="assembly-live"></p></div>
+ <div><form id="assembly-form" novalidate><div id="assembly-controls"></div></form><p id="assembly-feedback" role="status"></p><button type="button" id="restart-side">この側を組み直す</button>
+ <details class="assembly-rules"><summary>教材用の設置判定について</summary><p>杭は幅杭付近の色付きエリア内に2本設置します。間隔は画面上で区別でき、水平板を両方の杭に取り付けられることを確認します。水平板が杭位置の地盤に埋まる高さは選べません。</p><p>この判定と板の描画長さはゲーム操作のためのものです。実務の杭間隔・板長・構造安全性を規定するものではありません。</p></details></div></div>
+ <div id="assembly-finals"></div>
+</section><section id="result" class="panel result-panel" hidden><div class="panel-heading"><h2>判定結果・正解・解説</h2></div><div id="result-list"></div><p class="fine-print">表示は距離・ELを小数第3位、法勾配を小数第2位に丸めています。計算と判定には丸め前の値を使用します。誤差は「入力 − 正解」です。</p></section>
+</div><footer>切土丁張 初級演習<span>全9問 · 幅杭を利用する学習モデル</span></footer></main></body></html>
+
+
+
+
+
